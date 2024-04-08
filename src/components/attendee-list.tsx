@@ -29,13 +29,29 @@ interface Attendee {
 }
 
 export function AttendeeList() {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('search')) {
+      return url.searchParams.get('search') ?? ''
+    }
+
+    return ''
+  })
+
+  const [page, setPage] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('page')) {
+      return Number(url.searchParams.get('page'))
+    }
+
+    return 1
+  })
 
   const [attendees, setAttendees] = useState<Attendee[]>([])
 
   const [total, setTotal] = useState(0)
-
-  const [page, setPage] = useState(1)
 
   const totalPages = Math.ceil(total / 10)
 
@@ -59,26 +75,48 @@ export function AttendeeList() {
       })
   }, [page, search])
 
-  function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
-    setSearch(event.target.value)
+  function setCurrentSearch(search: string) {
+    const url = new URL(window.location.toString())
 
-    setPage(1)
+    url.searchParams.set('search', search)
+
+    window.history.pushState({}, '', url)
+
+    setSearch(search)
+  }
+
+  function setCurrentPage(page: number) {
+    // const searchParams = new URLSearchParams(window.location.search)
+    const url = new URL(window.location.toString())
+
+    url.searchParams.set('page', String(page))
+
+    // window.location.search = searchParams.toString()
+    window.history.pushState({}, '', url)
+
+    setPage(page)
+  }
+
+  function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
+    setCurrentSearch(event.target.value)
+
+    setCurrentPage(1)
   }
 
   function goToFirstPage() {
-    setPage(1)
+    setCurrentPage(1)
   }
 
   function goToLastPage() {
-    setPage(totalPages)
+    setCurrentPage(totalPages)
   }
 
   function goToPreviousPage() {
-    setPage(page - 1)
+    setCurrentPage(page - 1)
   }
 
   function goToNextPage() {
-    setPage(page + 1)
+    setCurrentPage(page + 1)
   }
 
   return (
@@ -89,6 +127,7 @@ export function AttendeeList() {
           <Search className="size-4 text-emerald-300" />
           <input
             onChange={onSearchInputChanged}
+            value={search}
             className="bg-transparent flex-1 outline-none border-0 p-0 text-sm focus:ring-0"
             placeholder="Search attendee..."
           />
